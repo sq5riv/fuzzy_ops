@@ -1,5 +1,5 @@
 import unittest
-from fuzzy_ops import fuzzy_set
+from fuzzy_ops.fuzzy_set import _c1
 
 class TestData(unittest.TestCase):
     def in_data(self):

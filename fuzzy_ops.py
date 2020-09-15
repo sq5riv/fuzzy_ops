@@ -68,6 +68,17 @@ class fuzzy_set(object):
         for a in self._alpha:
             if not a in self._alpha_cuts:
                 self._alpha_cuts[a] = self._cuter(a)
+
+    def alpha_downdate(self, alpha):
+        '''downdate some alpha from alphalist'''
+
+        if alpha in self._alpha_cuts: del self._alpha_cuts[alpha]
+        else: raise ValueError('There is not %s in alpha list' %alpha)
+
+    def alpha_show(self):
+        '''shoe list of alphacuts'''
+
+        return list(self._alpha_cuts.keys())
         
     def alpha_update(self, alpha):
         '''updates list of levels of aplhacuts'''
@@ -75,14 +86,23 @@ class fuzzy_set(object):
         self._c1(alpha, 'New alpha')
         self._c2(alpha, 'New alpha')
         self._c3(alpha, 'New alpha')
-        self._alpha = alpha
+        self._alpha.extend(alpha)
         self.alpha_cuts()
         self.OK = True
+
+    
+            
 
 if __name__ == '__main__':
     b = list(range(10))
     c = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
-    d = list(range(10))
+    d = [0.1,0.2,.3,.4,.5,.6,.7,.8,.9,1]
     a = fuzzy_set(b,c,d)
     print(a.__dict__)
+    c = [0.33,0.66]
+    a.alpha_update(c)
+    print(a.__dict__)
+    a.alpha_downdate(0.1)
+    print(a.__dict__)
+    print(a.alpha_show())
     
