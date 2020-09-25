@@ -3,7 +3,7 @@ from functools import reduce
 class fuzzy_set(object):
     '''Object contains fields and methods of fuzzy set. '''
 
-    def __init__(self, domain , alpha, function ):
+    def __init__(self, domain  = 0, alpha = 0, function = 0,  alpha_dict = {} ):
 
         #Fields give by user
         self._domain = domain
@@ -14,10 +14,14 @@ class fuzzy_set(object):
         self._alpha_cuts = {}
         self.is_convex = True
 
-        #Data check 
-        self._d_check()
-        #Make alpha_cuts
-        self.alpha_cuts()
+        if len(alpha_dict) != 0:
+            self._alpha_cuts = alpha_dict
+        else:
+            #Data check 
+            self._d_check()
+            #Make alpha_cuts
+            self.alpha_cuts()
+        
 
     def _convex_check(self, data, alpha_level):
 
