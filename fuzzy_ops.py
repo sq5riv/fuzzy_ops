@@ -4,6 +4,8 @@ class fuzzy_set(object):
     '''Object contains fields and methods of fuzzy set. '''
 
     def __init__(self, domain  = 0, alpha = 0, function = 0,  alpha_dict = {} ):
+        '''domain is list of x points, alpha is list of alpha levels,
+        function is list of values of function, alpha_dict is dict of alphacuts'''
 
         #Fields give by user
         self._domain = domain
@@ -84,7 +86,7 @@ class fuzzy_set(object):
         self._c1(self._alpha, 'Alpha')
         self._c2(self._alpha, 'Alpha')
         self._c3(self._alpha, 'Alpha')
-        self._c1(self._function, 'Fnction')
+        self._c1(self._function, 'Function')
         self._c2(self._function, 'Function')
         self._c4()
         self.OK = True
@@ -125,19 +127,43 @@ class fuzzy_set(object):
 
         return self._domain
     
-    def sum(self, summer, Tnorm):
-
-        middle_val = []
+    def sum(self, summer, alphas = None, Tnorm):
+        '''returns new fuzzy set. Summer is second fuzzy set with the same domain, alphas is
+        list of alphacuts if None alphas will be copied from this object,
+        Tnorm is function to take.'''
+        
+        ret_alpha_dict = {}
         self._domain_check(summer)
-        ac2 = summer.return_alpha_cuts()
-        for alpha1 in self._alpha_cuts:
-            for alpha2 in ac2:
-                middle_val.append(Tnorm(alpha1,alpha2))
+        ac2_list = summer.return_alpha_cuts()
+        if alphas is None:
+            alphas = self._alpha
+        else:
+            self._c1(alphas, "Sum Alpha list")
+            self._c2(alphas, "Sum Alpha list")
+            self._c3(alphas, "Sum Alpha list")
 
-        retval = reduce( lambda a,b : a&b , middle_val)
+        alphas.sort(reverse = True)
+        tmp_alpha = 2.0
+        for alpha in alphas:
+            middle_val = []
+            for  a1, ac1 in  (key, val for key, val in self._alpha_cuts.items() if float(key)>alpha and float(key)<=tmp_alpha):
+                for a2, ac2 in (key, val for key,val in ac2_list.items() if float(key)>alpha and float(key)<=tmp_alpha):
+                    middle_val.append(Tnorm(a1, ac1,a2,ac2))
+            middle_val = reduce( lambda a,b : a&b , middle_val)
+            try:
+                ret_alpha_dict[alpha] = middle_val & ret_alpha_dict[tmp_alpha]
+            except KeyError:
+                pass
+            tmp_alpha = alpha
 
-        return retval
+        ret_obj = fuzzy_set(domain = self._domain, alpha = alphas, alpha_dict = ret_alpha_dict)
 
+        return ret_obj
+
+def Tnorm_min(a1,ac1,a2,ac2):
+
+    return ac1&ac2
+    
 
 
 if __name__ == '__main__':
@@ -145,11 +171,6 @@ if __name__ == '__main__':
     c = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
     d = [0.1,0.2,.3,.4,.5,.6,.7,.8,.6,1]
     a = fuzzy_set(domain = b, alpha = c, function = d)
-    print(a.__dict__)
-    c = [0.33,0.66]
-    a.alpha_update(c)
-    print(a.__dict__)
-    a.alpha_downdate(0.1)
-    print(a.__dict__)
-    print(a.alpha_show())
+    e = fuzzy_set(domain = b, alpha = c, function = d)
+    a.sum(e,Tnorm = 
     
