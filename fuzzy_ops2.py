@@ -114,15 +114,84 @@ class fuzzy_set(object):
         '''returns alpha cuts'''
 
         return self._alpha_dict.copy()
-    
+
+    def comp_smoother(self, go, out):
+        '''take all in and outs of alphacuts and make one alphacut'''
+
+        tmp = go+out
+        tmp.sort()
+        var = 0
+        retgo = []
+        retout = []
+        for i in tmp:
+            if i in go:
+                go.remove(i)
+                var+=1
+                if var == 1:
+                    retgo.append(i)
+                    #print('ret_in:', i)
+                if var == 0:
+                    retout.append(i)
+                    #print('ret_out2', i)
+            if i in out:
+                out.remove(i)
+                var -=1
+                if var == 0:
+                    retout.append(i)
+                    #print('ret_out', i)
+                if var == -1:
+                    retgo.append(i)
+                    #print('ret_in2',i)
+
+             
+        #print(retgo, retout)
+        return (retgo, retout)
+   
+        
     def comp_sum(self,a,b):
         '''returns sum of compatrments'''
 #Cy to tak ma być?
-        c = a[0]+b[0]
-        d =a[1]+b[1]
+        a_in = a[::2]
+        b_in = b[::2]
+        a_out = a[1::2]
+        b_out = b[1::2]
+        #print(a_in, a_out)
+        o_in = []
+        o_out = []
+        for i in a_in:
+            for j in b_in:
+                o_in.append(i+j)
+        for i in a_out:
+            for j in b_out:
+                o_out.append(i+j)
+                #print(o_in, o_out)
+        return (o_in, o_out)
 
-        return [c,d]
-        
+    def comp_sub(self,a,b):
+        '''returns sum of compatrments'''
+#Cy to tak ma być?
+        a_in = a[::2]
+        b_in = b[::2]
+        a_out = a[1::2]
+        b_out = b[1::2]
+        #print(a_in, a_out)
+        o_in = []
+        o_out = []
+        for i in a_in:
+            for j in b_out:
+                o_in.append(i-j)
+        for i in a_out:
+            for j in b_in:
+                o_out.append(i-j)
+                
+        if o_in >o_out:
+            tmp = o_in
+            o_in = o_out
+            o_out = o_in
+
+        #print(a_in, b_in, a_out, b_out, o_in, o_out)
+        return (o_in, o_out)
+    
     def fuzzy_sum(self, fuzzy=None, tnorm=None, alphas = None):
         '''make sum of two fuzzy sets with some tnorm'''
 
@@ -136,20 +205,95 @@ class fuzzy_set(object):
         rem_alphacuts = fuzzy.get_Acuts()
         tmp_alphas.sort(reverse=True)
         new_alpha_dict = {}
-        last_vals = []
-        tmp_vals = []
+        last_in = []
+        last_out = []
+        tmp_in = []
+        tmp_out = []
         last_alpha = 2
         for alpha in tmp_alphas:
+            tmp_in = []
+            tmp_out =[]
             for k1, v1 in loc_alphacuts.items():
                 for k2,v2 in rem_alphacuts.items():
-                    if tnorm(k1,k2) >= alpha :
-                        tmp_vals.extend(self.comp_sum(v1,v2))
-            tmp_vals.extend(last_vals)
-            last_vals = [min(tmp_vals),max(tmp_vals)]
-            new_alpha_dict[alpha] =last_vals
-        print(new_alpha_dict)
+                    tval = tnorm(k1,k2)
+                    if tval >= alpha and tval< last_alpha:
+                        #print(k1,k2,v1,v2)
+                        i, o = self.comp_sum(v1,v2)
+                        tmp_in.extend(i)
+                        tmp_out.extend(o)
+            tmp_in  = tmp_in + last_in
+            tmp_out = tmp_out + last_out
+            #print(alpha, tmp_in, tmp_out, type(tmp_in), type(tmp_out))
+            #print('1', alpha, tmp_in, tmp_out)
+            tmp_in, tmp_out = self.comp_smoother(tmp_in, tmp_out)
+            #print('tmp', tmp_in, tmp_out, last_in, last_out)
+            ret_al = tmp_in+tmp_out
+            #print('2', alpha, ret_al)
+            ret_al.sort()
+            new_alpha_dict[alpha] = ret_al
+            last_alpha = alpha
+        #print(new_alpha_dict)
         return fuzzy_set(alpha_dict=new_alpha_dict)
                         
+    def fuzzy_sub(self, fuzzy=None, tnorm=None, alphas = None):
+        '''make sum of two fuzzy sets with some tnorm'''
+
+        if not isinstance(fuzzy, fuzzy_set): raise TypeError('Fuzzy set object is needed''')
+        if alphas == None:
+            tmp_alphas=self._alpha
+        else:
+            tmp_alphas=alphas
+            
+        loc_alphacuts = self._alpha_dict.copy()
+        rem_alphacuts = fuzzy.get_Acuts()
+        tmp_alphas.sort(reverse=True)
+        new_alpha_dict = {}
+        last_in = []
+        last_out = []
+        tmp_in = []
+        tmp_out = []
+        last_alpha = 2
+        for alpha in tmp_alphas:
+            tmp_in = []
+            tmp_out =[]
+            for k1, v1 in loc_alphacuts.items():
+                for k2,v2 in rem_alphacuts.items():
+                    tval = tnorm(k1,k2)
+                    if tval >= alpha  and k1>=k2 and tval< last_alpha:
+                        #print(k1,k2,v1,v2)
+                        i, o = self.comp_sub(v1,v2)
+                        tmp_in.extend(i)
+                        tmp_out.extend(o)
+            tmp_in  = tmp_in + last_in
+            tmp_out = tmp_out + last_out
+            #print(alpha, tmp_in, tmp_out, type(tmp_in), type(tmp_out))
+            #print('1', alpha, tmp_in, tmp_out)
+            tmp_in, tmp_out = self.comp_smoother(tmp_in, tmp_out)
+            #print('tmp', tmp_in, tmp_out, last_in, last_out)
+            ret_al = tmp_in+tmp_out
+            #print('2', alpha, ret_al)
+            ret_al.sort()
+            new_alpha_dict[alpha] = ret_al
+            last_alpha = alpha
+        #print(new_alpha_dict)
+        return fuzzy_set(alpha_dict=new_alpha_dict)
+"""                        
+    def fuzzy_sub(self, fuzzy=None, tnorm=None, alphas = None):
+        '''make sum of two fuzzy sets with some tnorm'''
+
+        if not isinstance(fuzzy, fuzzy_set): raise TypeError('Fuzzy set object is needed''')
+        if alphas == None:
+            tmp_alphas=self._alpha
+        else:
+            tmp_alphas=alphas
+            
+        loc_alphacuts = self._alpha_dict.copy()
+        rem_alphacuts = fuzzy.get_Acuts()
+        rem_alphacuts2 = {}
+        for i in rem_alphacuts:
+            rem_alphacuts2 =
+            """
+
 
         
 def T_min(a,b):
@@ -197,9 +341,11 @@ def T_sklar(a,b,p):
     
 if __name__ == '__main__':
     a = [1,2,3,4,5,6,7,8,9,10]
-    b =[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.3]
+    b =[0.1,0.2,0.3,0.5,0.9,0.9,0.5,0.3,0.2,0.1]
     c= [0.1,0.3,0.5,0.9]
     z = fuzzy_set(a,b,c)
     print(z.get_Acuts())
     q = z.fuzzy_sum(z,T_min)
     print(q.get_Acuts())
+    w = z.fuzzy_sub(z, T_min)
+    print(w.get_Acuts())
